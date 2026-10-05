@@ -78,6 +78,32 @@ meta ["group_code"] = meta["group"].map(code_map)
 assert meta["group_code"].isna().sum() == 0
 print(meta["group_code"].value_counts())
 
+# ----- FIND THE DESCRIPTION LINE -----
+# there are TWO !Sample_description lines; the second one says "MasterCount..."
+desc_line = None
+for line in lines:
+    if line.startswith("!Sample_description") and "MasterCount" not in line:
+        desc_line = line
+assert desc_line is not None
+
+desc_parts = desc_line.split("\t")
+
+# ----- CLEAN INTO R-STYLE CODES -----
+code = []
+for value in desc_parts[1:]:
+    value = value.strip('"')
+    value = value.replace(" ", "")
+    value = value.replace("-", ".")
+    if value[0].isdigit():            # starts with a digit -> R put an X in front
+        value = "X" + value
+    if value == "X396.10_a":          # GEO says 396-10_a, count file says X396.10
+        value = "X396.10"
+    code.append(value)
+
+meta["sample_code"] = code
+assert meta["sample_code"].duplicated().sum() == 0
+print(meta.head(12))
+
 # ----- SAVING -----
 meta.to_csv ("data/processed/metadata.csv")
 print("saved the metadata.csv inside data/processed", meta.shape)
